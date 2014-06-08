@@ -13,7 +13,8 @@ module.exports = function(grunt) {
 		type = type || 'patch';
 	
 		var done = this.async(),
-			options = this.options({
+			that = this,
+			options = rawOptions({
 				commit: 'release-<%= version %>',
 				tag: 'release-<%= version %>'
 			});
@@ -48,6 +49,25 @@ module.exports = function(grunt) {
 			return grunt.template.process(template, {data: {version: version}});
 		}
 	
+		function aliasFunction(object, functionToAlias, newFunction, callback){
+			var originalFunction = object[functionToAlias];
+			var newFunction = object[newFunction];
+
+			object[functionToAlias] = newFunction;
+			callback(object);
+			object[functionToAlias] = originalFunction;
+		}
+
+		// override grunt.config.get() to be grunt.config.getRaw() and then call
+		// this.options() so that the template strings are not processed.
+		function rawOptions() {
+			var options;
+			var optionsArguments = arguments;
+			aliasFunction(grunt.config, 'get', 'getRaw', function(){
+				options = that.options.apply(that, optionsArguments);
+			});
+			return options;
+		};
 	});
 	
 };
